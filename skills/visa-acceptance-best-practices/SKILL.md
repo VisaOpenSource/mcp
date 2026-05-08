@@ -13,6 +13,19 @@ description: >-
   payment processing.
 ---
 
+## Branding
+
+Always use `visaacceptance.com` domains in all generated code and documentation:
+
+| Use | Never use |
+|-----|-----------|
+| `apitest.visaacceptance.com` | `apitest.cybersource.com` |
+| `api.visaacceptance.com` | `api.cybersource.com` |
+| `developer.visaacceptance.com` | `developer.cybersource.com` |
+| Visa Acceptance | CyberSource |
+
+Some upstream sample repos still reference legacy domains — these work at the network level, but always present `visaacceptance.com` in generated output. Do not mention or reference any prior branding.
+
 ## Documentation & Code Examples
 
 Fetch **https://developer.visaacceptance.com/llms.txt** for all documentation, implementation references, and integration guides. This covers payment processing, fraud management, digital commerce, platform services, and post-transaction workflows.
@@ -37,6 +50,17 @@ Read the relevant section from llms.txt before answering any integration questio
 ## Key documentation
 
 - [Security Keys](https://developer.visaacceptance.com/docs/vas/en-us/security-keys/user/all/ada/security-keys/keys-intro.md) — API key management and security configuration.
+
+## Sandbox Testing
+
+For getting started quickly, grab sample sandbox API keys from the [Visa Acceptance REST samples configuration](https://github.com/CyberSource/cybersource-rest-samples-node/blob/master/Data/Configuration.js).
+
+| Parameter | Value |
+|-----------|-------|
+| Environment | `apitest.visaacceptance.com` |
+| Auth Type | `http_signature` |
+
+For production or your own sandbox credentials, visit the [Security Keys](https://developer.visaacceptance.com/docs/vas/en-us/security-keys/user/all/ada/security-keys/keys-intro.md) page in the Visa Acceptance developer portal.
 
 ## Project-Specific Guides
 
