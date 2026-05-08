@@ -1,4 +1,4 @@
-# Visa Developer Platform AI Skills
+# Visa API AI Skills
 
 A set of skills and instructions for AI agents integrating with Visa APIs.
 
@@ -10,12 +10,25 @@ Best practices and integration guide for the Visa Developer Platform (VDP) and V
 
 **Use when:**
 
-- Building or debugging integrations with Visa APIs
+- Building or debugging integrations with VDP APIs
 - Setting up authentication (X-Pay Token, Two-Way SSL / Mutual TLS)
 - Working with Message Level Encryption (MLE/JWE)
 - Managing credentials and environment configuration (Sandbox, Certification, Production)
 - Integrating VIC agent commerce workflows (card enrollment, purchase instructions, payment credentials)
 - Referencing VDP, VIC, X-Pay Token, or Visa MLE
+
+### visa-acceptance-best-practices
+
+Best practices and integration guide for Visa Acceptance payment processing.
+
+**Use when:**
+
+- Accepting payments (card present, card not present, digital wallets)
+- Configuring fraud and risk management (Payer Authentication, Decision Manager)
+- Setting up recurring billing or stored credentials
+- Integrating in-person payments (PAX, Tap to Pay, Card Present Connect)
+- Working with digital commerce (Click to Pay, Unified Checkout)
+- Managing platform services (boarding, webhooks, security keys)
 
 ## Installation
 
