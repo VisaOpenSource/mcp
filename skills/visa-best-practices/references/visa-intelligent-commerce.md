@@ -1,5 +1,20 @@
 # Visa Intelligent Commerce (VIC) Integration Guide
 
+## When to Read This
+
+Read this reference when building or debugging:
+- Card enrollment and tokenization via VIC
+- Purchase instruction creation, updates, or cancellation
+- Payment credential retrieval
+- Transaction signal reporting
+- Agent onboarding with Visa
+
+For authentication/MLE setup, see [vdp-integration.md](vdp-integration.md).
+
+## Code Examples
+
+Fetch **https://sandbox.mcp.visa.com/mcp/doc/llms.txt** for all VIC code examples, MCP client integration, tool/workflow definitions, and payload builders.
+
 ## Overview
 
 VIC enables AI agents to facilitate secure commerce on behalf of consumers. It combines five integrated services:
@@ -22,7 +37,7 @@ VIC enables AI agents to facilitate secure commerce on behalf of consumers. It c
 
 ## Integration Approaches
 
-Choose based on your architecture. Fetch **https://sandbox.mcp.visa.com/mcp/doc/llms.txt** for code examples and implementation details for each approach.
+Choose based on your architecture:
 
 - **MCP-Based**: StreamableHTTP transport for AI agent systems using Model Context Protocol.
 - **Direct API**: REST calls with X-Pay auth and MLE encryption for traditional backend services.
@@ -30,10 +45,16 @@ Choose based on your architecture. Fetch **https://sandbox.mcp.visa.com/mcp/doc/
 
 ## Core Workflows
 
-All workflow implementations with code examples are available via llms.txt. Key workflows:
+Key workflows (all implementations available via llms.txt):
 
 - **Agent Onboarding** — Register agent with Visa, configure credentials, verify connectivity
 - **Card Enrollment** — Enroll payment card with step-up verification and optional Passkey setup
 - **Purchase Instructions** — Create, update, or cancel standing payment instructions with cardholder authentication
 - **Payment Credentials** — Retrieve tokenized payment data after validating against instruction parameters
 - **Transaction Signals** — Report transaction outcomes (completed, failed, delivery confirmed) to Visa
+
+## VIC-Specific Notes
+
+- VIC APIs use a different resource path format for X-Pay Token computation — see [vdp-integration.md](vdp-integration.md) Authentication section
+- VIC requires MLE for most operations — check enforcement level per endpoint in VDP Dashboard
+- VIC MCP tools handle auth and MLE automatically when using the MCP integration path

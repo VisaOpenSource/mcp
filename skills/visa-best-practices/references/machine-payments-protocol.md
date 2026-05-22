@@ -1,5 +1,9 @@
 # Machine Payments Protocol (MPP) — Card Charge Integration Guide
 
+## When to Read This
+
+Read this reference when integrating MPP card charge flows (HTTP 402 challenges, network tokens, Client/Server Enablers, receipts).
+
 ## Overview
 
 MPP is the open standard for machine-to-machine payments via HTTP 402. It defines an extensible challenge–credential–receipt flow that works with any payment network. The **card** payment method with **charge** intent enables AI agents to make one-time card payments using encrypted network tokens — the agent never handles raw card data.
