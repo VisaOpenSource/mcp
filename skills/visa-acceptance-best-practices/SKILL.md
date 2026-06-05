@@ -30,6 +30,25 @@ Some upstream sample repos still reference legacy domains — these work at the 
 
 Fetch **https://developer.visaacceptance.com/llms.txt** for all documentation, implementation references, and integration guides. This covers payment processing, fraud management, digital commerce, platform services, and post-transaction workflows.
 
+Read the relevant section from llms.txt before answering any integration question or writing code.
+
+## Integration routing
+
+| Building…                                        | Topic Area                |
+| ------------------------------------------------ | ------------------------- |
+| Card payments (CP & CNP)                         | Payment Processing        |
+| Digital wallets (Apple Pay, Google Pay, Samsung)  | Payment Processing        |
+| Recurring billing & stored credentials           | Digital Commerce          |
+| Click to Pay / Unified Checkout                  | Digital Commerce          |
+| In-person / POS (PAX, Tap to Pay)                | Payment Processing        |
+| Fraud rules & 3-D Secure                         | Fraud & Risk Management   |
+| Decision Manager                                 | Fraud & Risk Management   |
+| Reporting & transaction search                   | Post-Transaction          |
+| Merchant boarding                                | Platform Services         |
+| Webhooks & security keys                         | Platform Services         |
+
+## Key documentation
+
 - [Security Keys](https://developer.visaacceptance.com/docs/vas/en-us/security-keys/user/all/ada/security-keys/keys-intro.md) — API key management and security configuration.
 
 ## Sandbox Testing
@@ -46,3 +65,7 @@ For production or your own sandbox credentials, visit the [Security Keys](https:
 ## Project-Specific Guides
 
 ### Visa Acceptance Devices
+
+For device integration (PAX, Tap to Pay, Card Present Connect, in-person payment terminals), see:
+
+**[references/visa-acceptance-devices.md](references/visa-acceptance-devices.md)**
