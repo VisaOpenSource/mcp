@@ -73,9 +73,12 @@ export async function router(
     return { mode: MODE.ADD_CARD };
   }
 
-  // Case 2b: No card data - enter add-card flow and mark as started
-  if (!state.private_cardData || !state.private_tokenId) {
-    console.log("Router: no card data, setting mode to add-card");
+  // Case 2b: No enrolled card - enter add-card flow and mark as started.
+  // The durable "card enrolled" signal is the token id; raw card data is
+  // intentionally ephemeral (purged after tokenization), so we must not treat
+  // its absence as "no card" or we would loop back into add-card.
+  if (!state.private_tokenId) {
+    console.log("Router: no enrolled card, setting mode to add-card");
     return {
       mode: MODE.ADD_CARD,
       private_cardAdditionCompleted: false,

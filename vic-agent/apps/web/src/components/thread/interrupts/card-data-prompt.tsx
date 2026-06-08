@@ -2,10 +2,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { AddCardModal } from "../card-management/add-card-modal";
 import { useStreamContext } from "@/providers/Stream";
-import { storeFullCardData } from "@/lib/card-storage";
+import { encryptCardData } from "@/lib/card-encryption";
 import type { CardFormData } from "@/lib/validations/card";
 import { CreditCard } from "lucide-react";
 import { getLastFourDigits, detectCardBrand } from "@/lib/utils/card-utils";
+import { toast } from "sonner";
 
 interface CardData {
   lastFourDigits: string;
@@ -25,9 +26,17 @@ export function CardDataPrompt() {
   const stream = useStreamContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleCardAdded = (fullCardData: CardFormData) => {
-    // Store full card data temporarily in localStorage
-    storeFullCardData(fullCardData);
+  const handleCardAdded = async (fullCardData: CardFormData) => {
+    // Encrypt the raw card data client-side; cleartext PAN/CVV is never
+    // persisted and never sent over the stream.
+    let encryptedCardData: string;
+    try {
+      encryptedCardData = await encryptCardData(fullCardData);
+    } catch (error) {
+      console.error("Failed to encrypt card data:", error);
+      toast.error("Could not securely process the card. Please try again.");
+      return;
+    }
 
     // Transform to display format (same as CardSection does)
     const displayData: CardData = {
@@ -38,22 +47,18 @@ export function CardDataPrompt() {
       status: "in_progress",
     };
 
-    // Save display data to localStorage (so it appears in settings)
+    // Save only non-sensitive display data to localStorage (so it appears in
+    // settings). No PAN/CVV is stored.
     try {
       localStorage.setItem(CARD_STORAGE_KEY, JSON.stringify(displayData));
     } catch (error) {
       console.error("Failed to save card display data:", error);
     }
 
-    // Resume the graph with card data and email
+    // Resume the graph with the encrypted card payload and email.
     stream.submit(
       {
-        private_cardData: {
-          cardNumber: fullCardData.cardNumber,
-          expiryDate: fullCardData.expiryDate,
-          cvv: fullCardData.cvv,
-          cardholderName: fullCardData.cardholderName,
-        },
+        private_encryptedCardData: encryptedCardData,
         email: fullCardData.email,
       } as any,
       {
@@ -66,7 +71,6 @@ export function CardDataPrompt() {
       },
     );
 
-    // Keep card data in localStorage for future threads
     setIsModalOpen(false);
   };
 

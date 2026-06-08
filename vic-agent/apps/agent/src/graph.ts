@@ -71,7 +71,7 @@ function routeFromRouter(state: typeof GraphState.State): string {
 }
 
 function routeCardCheck(state: typeof GraphState.State): string {
-  if (state.private_cardData) {
+  if (state.private_cardData || state.private_encryptedCardData) {
     return NODE_NAMES.TOKENIZE_CARD;
   }
   return NODE_NAMES.EXPECT_CARD_DATA;

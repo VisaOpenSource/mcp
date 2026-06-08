@@ -33,7 +33,7 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
 import { GitHubSVG } from "../icons/github";
-import { getFullCardData, getTokenId, storeTokenId } from "@/lib/card-storage";
+import { getTokenId, storeTokenId } from "@/lib/card-storage";
 import { getClientDeviceId, getClientReferenceId } from "@/lib/vts-utils";
 import { InterruptHandler } from "./interrupt-handler";
 
@@ -189,25 +189,15 @@ export function Thread() {
 
     // Get stored data
     const tokenId = getTokenId();
-    const fullCardData = getFullCardData();
     const currentThreadId = threadId || "new";
     const isFirstMessageForThread =
       cardDataSentForThread.current !== currentThreadId;
 
-    // Only send data on first message of thread
+    // Only send data on first message of thread.
+    // Note: raw card data is never resent here. It is encrypted and submitted
+    // once at enrollment (card-data-prompt / card-section); thereafter only the
+    // non-sensitive token ID is needed to identify the enrolled card.
     if (isFirstMessageForThread) {
-      // Send card data if available
-      if (fullCardData) {
-        stateUpdate.private_cardData = {
-          cardNumber: fullCardData.cardNumber,
-          expiryDate: fullCardData.expiryDate,
-          cvv: fullCardData.cvv,
-          cardholderName: fullCardData.cardholderName,
-        };
-        stateUpdate.email = fullCardData.email;
-        console.log("[Thread] Sending card data with first message");
-      }
-
       // Send token ID if available
       if (tokenId) {
         stateUpdate.private_tokenId = tokenId;
