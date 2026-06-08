@@ -36,6 +36,42 @@ export const generateEmailHash = (email: string): string => {
   return hash(secret, email, true);
 };
 
+export interface DecryptedCardData {
+  cardNumber?: string;
+  expiryDate?: string;
+  cvv?: string;
+  cardholderName?: string;
+}
+
+/**
+ * Decrypt a client-side-encrypted card payload (RSA-OAEP, SHA-256, base64).
+ *
+ * The web client encrypts card data with the public key so cleartext PAN/CVV
+ * never crosses the stream. This decrypts it in memory using the private key
+ * (CARD_ENC_PRIVATE_KEY, a PKCS#8 PEM; literal "\n" sequences are normalized so
+ * the key can be supplied on a single line in env files).
+ *
+ * @param ciphertextB64 - Base64-encoded RSA-OAEP ciphertext
+ * @returns The decrypted card data object
+ */
+export const decryptCardData = (ciphertextB64: string): DecryptedCardData => {
+  const pem = (process.env.CARD_ENC_PRIVATE_KEY || "").replace(/\\n/g, "\n");
+  if (!pem) {
+    throw new Error("CARD_ENC_PRIVATE_KEY environment variable is required");
+  }
+
+  const decrypted = crypto.privateDecrypt(
+    {
+      key: pem,
+      padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+      oaepHash: "sha256",
+    },
+    Buffer.from(ciphertextB64, "base64")
+  );
+
+  return JSON.parse(decrypted.toString("utf8")) as DecryptedCardData;
+};
+
 /**
  * Encrypt data with secret using modern jose library
  * @param secret - The encryption secret

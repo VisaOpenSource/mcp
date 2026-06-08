@@ -5,11 +5,8 @@ import { DeleteCardDialog } from "./delete-card-dialog";
 import { type CardFormData } from "@/lib/validations/card";
 import { detectCardBrand, getLastFourDigits } from "@/lib/utils/card-utils";
 import { toast } from "sonner";
-import {
-  storeFullCardData,
-  clearFullCardData,
-  getTokenId,
-} from "@/lib/card-storage";
+import { clearStoredCard, getTokenId } from "@/lib/card-storage";
+import { encryptCardData } from "@/lib/card-encryption";
 import { useStreamContext } from "@/providers/Stream";
 
 interface CardData {
@@ -65,8 +62,8 @@ export function CardSection() {
     if (currentSignal > lastDeletionSignalRef.current && cardData) {
       console.log("[CardSection] Deletion signal received, clearing UI");
 
-      // Clear localStorage (full card data + token ID)
-      clearFullCardData();
+      // Clear the stored credential (token ID); display data is cleared below.
+      clearStoredCard();
 
       // Clear React state for UI update
       setCardData(null);
@@ -85,17 +82,19 @@ export function CardSection() {
     }
   }, [stream.values?.cardDeletionSignal, cardData]);
 
-  const handleCardSubmit = (formData: CardFormData) => {
-    // Store full card data to localStorage (for backend submissions)
-    storeFullCardData({
-      cardNumber: formData.cardNumber,
-      expiryDate: formData.expiryDate,
-      cvv: formData.cvv,
-      cardholderName: formData.cardholderName,
-      email: formData.email,
-    });
+  const handleCardSubmit = async (formData: CardFormData) => {
+    // Encrypt the raw card data client-side and submit the ciphertext to the
+    // agent for tokenization. Cleartext PAN/CVV is never persisted.
+    let encryptedCardData: string;
+    try {
+      encryptedCardData = await encryptCardData(formData);
+    } catch (error) {
+      console.error("Failed to encrypt card data:", error);
+      toast.error("Could not securely process the card. Please try again.");
+      return;
+    }
 
-    // Transform form data to card data
+    // Transform form data to non-sensitive display data
     const newCardData: CardData = {
       lastFourDigits: getLastFourDigits(formData.cardNumber),
       cardholderName: formData.cardholderName,
@@ -104,8 +103,24 @@ export function CardSection() {
       status: "in_progress", // Default to in_progress, will be activated later
     };
 
-    // Set cardData state (triggers localStorage save via useEffect)
+    // Set cardData state (triggers localStorage save of display data via useEffect)
     setCardData(newCardData);
+
+    // Submit the encrypted card payload to the agent to drive tokenization.
+    stream.submit(
+      {
+        private_encryptedCardData: encryptedCardData,
+        email: formData.email,
+      } as any,
+      {
+        streamMode: ["values"],
+        config: {
+          configurable: {
+            model: stream.currentModel,
+          },
+        },
+      },
+    );
 
     // Show success toast
     toast.success("Card added successfully");

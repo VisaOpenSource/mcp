@@ -19,6 +19,7 @@ import { VisaLogoSVG } from "@/components/icons/visa";
 import { Label } from "@/components/ui/label";
 import { ArrowRight } from "lucide-react";
 import { getApiKey } from "@/lib/api-key";
+import { isAllowedApiUrl } from "@/lib/url-allowlist";
 import { useThreads } from "./Thread";
 import { toast } from "sonner";
 import {
@@ -64,6 +65,8 @@ const useTypedStream = useStream<
       action?: string | null;
       cardDeletionSignal?: number;
       private_tokenId?: string | null;
+      private_encryptedCardData?: string | null;
+      email?: string | null;
     };
     CustomEventType: UIMessage | RemoveUIMessage;
   }
@@ -83,6 +86,11 @@ async function checkGraphStatus(
   apiUrl: string,
   apiKey: string | null,
 ): Promise<boolean> {
+  // Never send the API key to an untrusted host.
+  if (!isAllowedApiUrl(apiUrl)) {
+    console.error("Refusing to contact untrusted API URL:", apiUrl);
+    return false;
+  }
   try {
     const res = await fetch(`${apiUrl}/info`, {
       ...(apiKey && {
@@ -216,6 +224,26 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
   // Determine final values to use, prioritizing URL params then env vars
   const finalApiUrl = apiUrl || envApiUrl;
   const finalAssistantId = assistantId || envAssistantId;
+
+  // Refuse to mount a session (which would send the API key) for an untrusted
+  // API URL — e.g. an attacker-supplied `?apiUrl=` query parameter.
+  if (finalApiUrl && !isAllowedApiUrl(finalApiUrl)) {
+    return (
+      <div className="flex items-center justify-center min-h-screen w-full p-4">
+        <div className="flex flex-col gap-3 border bg-background shadow-lg rounded-lg max-w-xl p-8">
+          <h1 className="text-xl font-bold text-[var(--visa-blue-primary)]">
+            Untrusted deployment URL
+          </h1>
+          <p className="text-base text-muted-foreground">
+            The requested agent URL <code>{finalApiUrl}</code> is not in the
+            list of trusted hosts, so the application will not connect to it or
+            send credentials. If this is your own deployment, add its origin to{" "}
+            <code>NEXT_PUBLIC_ALLOWED_API_URLS</code>.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // If we're missing any required values, show the form
   if (!finalApiUrl || !finalAssistantId) {

@@ -263,6 +263,18 @@ export const GraphState = Annotation.Root({
   }),
 
   /**
+   * Private field: client-side-encrypted card payload (RSA-OAEP base64).
+   * The web client encrypts the raw card data before submission so cleartext
+   * PAN/CVV never crosses the stream. It is decrypted in memory inside
+   * tokenizeCard and then purged. Like private_cardData, this is NEVER exposed
+   * to external clients via the output schema.
+   */
+  private_encryptedCardData: Annotation<string | null>({
+    reducer: (x, y) => (y !== undefined ? y : x),
+    default: () => null,
+  }),
+
+  /**
    * User email address.
    * Collected alongside card information for payment processing.
    */

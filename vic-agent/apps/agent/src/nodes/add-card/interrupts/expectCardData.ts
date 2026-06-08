@@ -15,8 +15,8 @@ import { GraphState } from "../../../utils/state.js";
 export async function expectCardData(
   state: typeof GraphState.State
 ): Promise<Partial<typeof GraphState.State>> {
-  // If card data is missing, interrupt
-  if (!state.private_cardData) {
+  // If card data is missing (neither raw nor encrypted), interrupt
+  if (!state.private_cardData && !state.private_encryptedCardData) {
     interrupt("awaiting_card_data");
   }
   console.log("received card data");

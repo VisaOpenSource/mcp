@@ -1,5 +1,6 @@
 import { validate } from "uuid";
 import { getApiKey } from "@/lib/api-key";
+import { isAllowedApiUrl } from "@/lib/url-allowlist";
 import { Thread } from "@langchain/langgraph-sdk";
 import { useQueryState } from "nuqs";
 import {
@@ -41,6 +42,11 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
 
   const getThreads = useCallback(async (): Promise<Thread[]> => {
     if (!apiUrl || !assistantId) return [];
+    // Do not send the API key to an untrusted host.
+    if (!isAllowedApiUrl(apiUrl)) {
+      console.error("Refusing to fetch threads from untrusted API URL:", apiUrl);
+      return [];
+    }
     const client = createClient(apiUrl, getApiKey() ?? undefined);
 
     const threads = await client.threads.search({

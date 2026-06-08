@@ -2,7 +2,11 @@ import { RunnableConfig } from "@langchain/core/runnables";
 import { AIMessage } from "@langchain/core/messages";
 import { GraphState } from "../../utils/state.js";
 import type { ExecutionContext } from "../../utils/execution-context/index.js";
-import { generateEmailHash, encryptWithSecret } from "../../utils/crypto.js";
+import {
+  generateEmailHash,
+  encryptWithSecret,
+  decryptCardData,
+} from "../../utils/crypto.js";
 
 /**
  * Prepares encrypted payment instrument data from card data
@@ -101,7 +105,14 @@ export async function tokenizeCard(
   }
 
   try {
-    if (!state.private_cardData) {
+    // Card data arrives encrypted from the client. Decrypt it in memory here;
+    // never write the cleartext back into graph state (it would be checkpointed).
+    let cardData = state.private_cardData;
+    if (!cardData && state.private_encryptedCardData) {
+      cardData = decryptCardData(state.private_encryptedCardData);
+    }
+
+    if (!cardData) {
       throw new Error("Card data is missing from state");
     }
 
@@ -135,9 +146,8 @@ export async function tokenizeCard(
     );
 
     // Prepare encrypted payment instrument
-    payload.encPaymentInstrument = await prepareEncryptedPaymentInstrument(
-      state.private_cardData
-    );
+    payload.encPaymentInstrument =
+      await prepareEncryptedPaymentInstrument(cardData);
 
     console.log("Calling provision-token-given-pan-data with payload");
 
@@ -155,6 +165,11 @@ export async function tokenizeCard(
 
     return {
       private_tokenId: vProvisionedTokenID,
+      // Purge sensitive card data from state after successful tokenization so
+      // PAN/CVV (Sensitive Authentication Data) is not retained in the
+      // checkpoint post-authorization (mirrors the error path below).
+      private_cardData: null,
+      private_encryptedCardData: null,
       messages: [
         ...toolMessages, // Tool call messages appear first in UI
         new AIMessage({
@@ -172,6 +187,7 @@ export async function tokenizeCard(
     // Clear card data to prevent retry loop and signal UI to clear localStorage
     return {
       private_cardData: null, // Clear from agent state
+      private_encryptedCardData: null, // Clear encrypted payload too
       cardDeletionSignal: (state.cardDeletionSignal || 0) + 1, // Signal UI to clear localStorage
       messages: [
         new AIMessage({

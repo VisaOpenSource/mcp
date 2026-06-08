@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useQueryState } from "nuqs";
 import { constructOpenInStudioURL } from "../utils";
+import { isAllowedApiUrl } from "@/lib/url-allowlist";
 import { HumanInterrupt } from "@langchain/langgraph/prebuilt";
 
 interface ThreadActionsViewProps {
@@ -87,6 +88,17 @@ export function ThreadActionsView({
     if (!apiUrl) {
       toast.error("Error", {
         description: "Please set the LangGraph deployment URL in settings.",
+        duration: 5000,
+        richColors: true,
+        closeButton: true,
+      });
+      return;
+    }
+
+    // Only open Studio for a trusted host (blocks open-redirect via ?apiUrl=).
+    if (!isAllowedApiUrl(apiUrl)) {
+      toast.error("Untrusted URL", {
+        description: "The configured deployment URL is not a trusted host.",
         duration: 5000,
         richColors: true,
         closeButton: true,
