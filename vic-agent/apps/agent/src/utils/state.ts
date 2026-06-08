@@ -640,11 +640,17 @@ export const OutputStateAnnotation = Annotation.Root({
   registerAttestationOptions: registerAttestationOptionsChannel,
 
   /**
-   * Provisioned token ID from Visa tokenization.
-   * Exposed to UI for storage and reuse across sessions.
-   * Uses same field name as GraphState (following isMcpConnected pattern).
+   * Provisioned token ID from Visa tokenization, exposed to the UI for storage
+   * and reuse across sessions.
+   *
+   * Surfaced under the non-`private_` name `tokenId` because it is an output
+   * field intentionally returned to the client: the `private_` prefix is
+   * reserved for fields that must NEVER leave the server. This is a tokenized
+   * reference (not a PAN/CVV), so exposing it to the client is by design.
+   * Bound to the shared tokenIdChannel so it stays in sync with the internal
+   * GraphState.private_tokenId.
    */
-  private_tokenId: tokenIdChannel,
+  tokenId: tokenIdChannel,
 
   /**
    * Public action field - UI can set this to trigger one-time operations.

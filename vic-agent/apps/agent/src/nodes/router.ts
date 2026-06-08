@@ -14,6 +14,8 @@ export async function router(
 
   console.log("");
   console.log("=== ROUTER CALLED ===");
+  // Log only non-sensitive routing flags. Never log card data, cardholder
+  // name, email, or the token id (PII / payment data).
   console.log(
     "State snapshot:",
     JSON.stringify(
@@ -21,21 +23,13 @@ export async function router(
         mode: state.mode,
         action: state.action,
         private_action: state.private_action,
-        private_tokenId: state.private_tokenId,
+        hasTokenId: !!state.private_tokenId,
         cardDeletionSignal: state.cardDeletionSignal,
         private_cardAdditionCompleted: state.private_cardAdditionCompleted,
         hasCardData: !!state.private_cardData,
-        cardDataValue: state.private_cardData
-          ? {
-              cardNumber: state.private_cardData.cardNumber
-                ? "***" + state.private_cardData.cardNumber.slice(-4)
-                : undefined,
-              cardholderName: state.private_cardData.cardholderName,
-            }
-          : null,
-        email: state.email,
-        product: state.product,
-        budget: state.budget,
+        hasEmail: !!state.email,
+        hasProduct: !!state.product,
+        hasBudget: state.budget != null,
       },
       null,
       2

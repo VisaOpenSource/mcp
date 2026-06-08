@@ -5,6 +5,7 @@
 
 import { CompactEncrypt, importPKCS8, SignJWT, importX509 } from 'jose';
 import type { CompactJWEHeaderParameters, JWK } from 'jose';
+import { X509Certificate } from 'node:crypto';
 import { z } from 'zod';
 
 const TOKEN_CONFIG = {
@@ -108,6 +109,65 @@ export function loadVisaCredentials(): VisaCredentials {
  *
  * @internal
  */
+/**
+ * Verifies the x5c certificate chain of a JWKS key before its public key is
+ * trusted to encrypt Visa credentials. Without this, a JWKS endpoint that was
+ * MITM'd or returned an attacker certificate would cause credentials to be
+ * encrypted to an attacker-controlled key.
+ *
+ * Checks performed:
+ *  - leaf certificate is within its validity window;
+ *  - each certificate in the chain is signed by the next (linkage);
+ *  - trust anchor: if VISA_JWKS_CA_PEM is configured, the top of the chain must
+ *    be signed by (or equal) that trusted root; if VISA_JWKS_CERT_FINGERPRINT
+ *    (sha256) is configured, the leaf fingerprint must match (pinning).
+ *
+ * @throws {Error} if any check fails.
+ */
+function verifyCertificateChain(x5c: string[], kid: string | undefined): void {
+  const certs = x5c.map((b64) => new X509Certificate(Buffer.from(b64.replace(/\s/g, ''), 'base64')));
+  const leaf = certs[0];
+
+  const now = Date.now();
+  if (now < Date.parse(leaf.validFrom) || now > Date.parse(leaf.validTo)) {
+    throw new Error(`JWKS leaf certificate ${kid || ''} is outside its validity window`);
+  }
+
+  // Verify chain linkage: each cert must be issued by and signed by the next.
+  for (let i = 0; i < certs.length - 1; i++) {
+    const issuer = certs[i + 1];
+    if (!certs[i].checkIssued(issuer) || !certs[i].verify(issuer.publicKey)) {
+      throw new Error(`JWKS certificate chain is broken at position ${i} (${kid || ''})`);
+    }
+  }
+
+  // Optional pin: leaf fingerprint must match the configured value.
+  const pinnedFingerprint = process.env.VISA_JWKS_CERT_FINGERPRINT;
+  if (pinnedFingerprint) {
+    const normalize = (f: string) => f.replace(/[:\s]/g, '').toLowerCase();
+    if (normalize(leaf.fingerprint256) !== normalize(pinnedFingerprint)) {
+      throw new Error(`JWKS leaf certificate fingerprint does not match the pinned value`);
+    }
+  }
+
+  // Trust anchor: verify the chain terminates at a configured trusted root.
+  const caPem = process.env.VISA_JWKS_CA_PEM;
+  if (caPem) {
+    const ca = new X509Certificate(caPem);
+    const top = certs[certs.length - 1];
+    const trusted = top.fingerprint256 === ca.fingerprint256 || top.verify(ca.publicKey);
+    if (!trusted) {
+      throw new Error('JWKS certificate chain does not terminate at the trusted Visa root CA');
+    }
+  } else if (!pinnedFingerprint) {
+    // No configured trust anchor. Chain linkage + validity are verified above,
+    // but pin a fingerprint or set VISA_JWKS_CA_PEM for full trust.
+    console.warn(
+      'JWKS trust anchor not configured (VISA_JWKS_CA_PEM / VISA_JWKS_CERT_FINGERPRINT); verifying chain linkage and validity only.'
+    );
+  }
+}
+
 async function getVisaJwksKey(credentials: VisaCredentials): Promise<JWK> {
   const jwksUrl = `${credentials.baseUrl}/.well-known/jwks`;
 
@@ -122,7 +182,16 @@ async function getVisaJwksKey(credentials: VisaCredentials): Promise<JWK> {
     throw new Error('No keys found in JWKS');
   }
 
-  const key = jwks.keys[0];
+  // Select the key by the expected kid when configured, instead of blindly
+  // trusting keys[0] (which an attacker-influenced JWKS could reorder).
+  const expectedKid = process.env.VISA_JWKS_KID;
+  const key = expectedKid
+    ? jwks.keys.find((k) => k.kid === expectedKid)
+    : jwks.keys[0];
+
+  if (!key) {
+    throw new Error(`No JWKS key matching expected kid "${expectedKid}"`);
+  }
 
   // Validate RSA key requirements
   if (!key?.n || !key?.e) {
@@ -132,6 +201,9 @@ async function getVisaJwksKey(credentials: VisaCredentials): Promise<JWK> {
   if (!key?.x5c || key.x5c.length === 0) {
     throw new Error(`JWKS key ${key?.kid || 'unknown'} missing x5c certificate chain`);
   }
+
+  // Verify the certificate chain before the public key is trusted.
+  verifyCertificateChain(key.x5c, key.kid);
 
   return key;
 }

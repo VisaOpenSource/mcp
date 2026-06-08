@@ -35,7 +35,9 @@ export type StateType = {
   messages: Message[];
   ui?: UIMessage[];
   isMcpConnected?: boolean;
-  private_tokenId?: string | null;
+  // Output field exposed by the agent (renamed from private_tokenId; it is a
+  // non-sensitive token reference intentionally surfaced to the client).
+  tokenId?: string | null;
   validationMethods?: Array<{
     method: string;
     value: string;
