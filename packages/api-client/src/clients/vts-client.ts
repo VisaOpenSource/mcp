@@ -112,7 +112,8 @@ export class VtsApiClient {
         data: responseData,
         correlationId,
       };
-      console.log('VTS API Response:', JSON.stringify(result, null, 2));
+      // Do not log the full VTS response body — it can contain token/card data.
+      console.log('VTS API Response received', correlationId ? `(correlationId: ${correlationId})` : '');
       return result as T;
     } catch (error) {
       // Re-throw enhanced errors as-is (errors we created via createEnhancedError)

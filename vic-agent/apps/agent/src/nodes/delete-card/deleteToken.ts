@@ -48,6 +48,26 @@ export async function deleteToken(
   }
 
   try {
+    // Ownership/existence check before deletion: confirm the token is known and
+    // resolvable for this wallet via get-token-status. This prevents deleting an
+    // arbitrary token id that was not provisioned through this application.
+    // NOTE: the reference graph has no per-user identity, so this verifies the
+    // token belongs to the app's wallet (combined with the agent-backend API-key
+    // auth and per-session isolation that gate who can invoke this flow); true
+    // per-user object-level ownership would require an authenticated user model.
+    try {
+      await context.getTokenStatus(state.private_tokenId);
+    } catch (statusError) {
+      console.error("Refusing delete: token status could not be verified");
+      return {
+        messages: [
+          new AIMessage(
+            "We could not verify this card before removing it, so no changes were made."
+          ),
+        ],
+      };
+    }
+
     const payload = {
       vProvisionedTokenID: state.private_tokenId,
       updateReason: {
@@ -55,14 +75,16 @@ export async function deleteToken(
       },
     };
 
-    console.log("Calling delete-token with tokenId:", state.private_tokenId);
+    // Do not log the token id.
+    console.log("Calling delete-token");
 
-    const { result, messages: toolMessages } = await context.deleteToken(
+    const { messages: toolMessages } = await context.deleteToken(
       state.private_tokenId,
       payload
     );
 
-    console.log("Delete token successful, result:", result);
+    // Do not log the raw delete result (may contain token data).
+    console.log("Delete token successful");
 
     // SUCCESS: Signal UI to clear localStorage and show success message
     // Increment cardDeletionSignal counter to trigger UI clearing

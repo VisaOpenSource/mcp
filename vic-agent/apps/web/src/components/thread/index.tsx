@@ -160,14 +160,14 @@ export function Thread() {
     prevMessageLength.current = messages.length;
   }, [messages]);
 
-  // Listen for token ID from agent and save to localStorage
+  // Listen for token ID from agent (output field `tokenId`) and save to localStorage
   useEffect(() => {
-    const receivedTokenId = stream.values?.private_tokenId;
+    const receivedTokenId = stream.values?.tokenId;
     if (receivedTokenId && receivedTokenId !== getTokenId()) {
-      console.log("[Thread] Storing private_tokenId from agent");
+      console.log("[Thread] Storing token id from agent");
       storeTokenId(receivedTokenId);
     }
-  }, [stream.values?.private_tokenId]);
+  }, [stream.values?.tokenId]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();

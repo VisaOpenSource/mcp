@@ -69,7 +69,8 @@ export async function retrievePaymentCredentials(
   );
 
   console.log('  ✅ Payment credentials retrieved successfully');
-  console.log(' Full response:', JSON.stringify(response, null, 2));
+  // Do not log the full response — it contains decrypted payment credentials
+  // (PAN/token/dynamic CVV).
 
   return response;
 }

@@ -118,7 +118,7 @@ export const encryptWithSecret = async (
       "Payload type:",
       Array.isArray(payload) ? "array" : typeof payload
     );
-    console.error("Payload content:", JSON.stringify(payload, null, 2));
+    // Never log the payload content — it contains cleartext card data.
     throw new Error(
       `JWE encryption failed: ${error instanceof Error ? error.message : String(error)}`
     );

@@ -46,7 +46,8 @@ export async function checkTokenStatus(
   }
 
   try {
-    console.log("Calling get-token-status for token:", state.private_tokenId);
+    // Do not log the token id (sensitive payment-token reference).
+    console.log("Calling get-token-status");
 
     const { result, messages: toolMessages } = await context.getTokenStatus(
       state.private_tokenId!
